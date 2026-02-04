@@ -25,7 +25,7 @@ server = Server("fusion360-mcp")
 
 async def call_fusion(endpoint: str) -> dict[str, Any]:
     """Call a Fusion 360 REST endpoint."""
-    async with httpx.AsyncClient(timeout=300.0) as client:  # pragma: no mutate
+    async with httpx.AsyncClient(timeout=300.0) as client:
         try:
             response = await client.get(f"{FUSION_URL}{endpoint}")
             response.raise_for_status()
@@ -38,7 +38,7 @@ async def call_fusion(endpoint: str) -> dict[str, Any]:
 
 async def call_fusion_post(endpoint: str, data: dict[str, Any]) -> dict[str, Any]:
     """Make POST request to Fusion 360 REST API."""
-    async with httpx.AsyncClient(timeout=300.0) as client:  # pragma: no mutate
+    async with httpx.AsyncClient(timeout=300.0) as client:
         try:
             response = await client.post(f"{FUSION_URL}{endpoint}", json=data)
             response.raise_for_status()
@@ -369,21 +369,15 @@ async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent | 
 
 
 def create_app() -> Starlette:
-    """Create Starlette app with Streamable HTTP transport for MCP.
-
-    Note: This factory function has configuration parameters that cannot be
-    meaningfully unit tested without integration tests. The framework config
-    (event_store, json_response, stateless, lifespan) are validated by
-    running the app, not by checking parameter values.
-    """
+    """Create Starlette app with Streamable HTTP transport for MCP."""
     import contextlib
     from collections.abc import AsyncIterator
 
-    session_manager = StreamableHTTPSessionManager(  # pragma: no mutate
-        app=server,  # pragma: no mutate
-        event_store=None,  # pragma: no mutate
-        json_response=False,  # pragma: no mutate
-        stateless=True,  # pragma: no mutate
+    session_manager = StreamableHTTPSessionManager(
+        app=server,
+        event_store=None,
+        json_response=False,
+        stateless=True,
     )
 
     @contextlib.asynccontextmanager
@@ -391,18 +385,18 @@ def create_app() -> Starlette:
         async with session_manager.run():
             yield
 
-    return Starlette(  # pragma: no mutate
+    return Starlette(
         routes=[
             Mount("/mcp", app=session_manager.handle_request),
         ],
-        lifespan=lifespan,  # pragma: no mutate
+        lifespan=lifespan,
     )
 
 
-async def main():  # pragma: no cover, no mutate
+async def main():
     """Run the MCP server with stdio transport (for backward compatibility)."""
-    async with stdio_server() as (read_stream, write_stream):  # pragma: no mutate
-        await server.run(read_stream, write_stream, server.create_initialization_options())  # pragma: no mutate
+    async with stdio_server() as (read_stream, write_stream):
+        await server.run(read_stream, write_stream, server.create_initialization_options())
 
 
 if __name__ == "__main__":

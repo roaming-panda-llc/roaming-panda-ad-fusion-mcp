@@ -26,6 +26,7 @@ dev = [
     "pytest-cov>=4.1",
     "pytest-asyncio>=0.23",
     "pytest-httpx>=0.30",
+    "pytest-mock>=3.12",
     "mutmut>=3.0",
     "ruff>=0.3.0",
 ]
@@ -58,11 +59,6 @@ exclude_lines = [
 paths_to_mutate = ["src/fusion360_mcp/"]
 tests_dir = ["tests/"]
 debug = true
-
-# Functions to skip from mutation testing:
-# - main: Entry point, already excluded via pragma: no cover
-# - create_app: Factory function with framework configuration that requires integration tests
-# The timeout values (300.0) and framework config parameters cannot be unit tested practically
 
 [tool.ruff]
 line-length = 100
