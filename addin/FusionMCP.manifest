@@ -1,0 +1,12 @@
+{
+    "autodeskProduct": "Fusion",
+    "type": "addin",
+    "id": "FusionMCP",
+    "author": "Mark Ng",
+    "description": {
+        "": "MCP server for Claude Code integration - exposes Fusion 360 document info via local HTTP/SSE"
+    },
+    "version": "1.0.0",
+    "runOnStartup": false,
+    "supportedOS": "mac"
+}
