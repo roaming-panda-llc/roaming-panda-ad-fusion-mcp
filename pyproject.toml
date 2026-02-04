@@ -55,8 +55,14 @@ exclude_lines = [
 ]
 
 [tool.mutmut]
-paths_to_mutate = "src/fusion360_mcp/"
-tests_dir = "tests/"
+paths_to_mutate = ["src/fusion360_mcp/"]
+tests_dir = ["tests/"]
+debug = true
+
+# Functions to skip from mutation testing:
+# - main: Entry point, already excluded via pragma: no cover
+# - create_app: Factory function with framework configuration that requires integration tests
+# The timeout values (300.0) and framework config parameters cannot be unit tested practically
 
 [tool.ruff]
 line-length = 100

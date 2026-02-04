@@ -33,8 +33,7 @@ def describe_call_fusion():
             httpx.ConnectError("Connection refused"), url="http://127.0.0.1:3001/health"
         )
         result = await call_fusion("/health")
-        assert "error" in result
-        assert "not running" in result["error"]
+        assert result == {"error": "Fusion 360 not running or add-in not loaded"}
 
     @pytest.mark.asyncio
     async def it_returns_error_on_http_error(httpx_mock):
@@ -52,6 +51,10 @@ def describe_call_fusion_post():
         httpx_mock.add_response(url="http://127.0.0.1:3001/run_script", json={"result": "success"})
         result = await call_fusion_post("/run_script", {"code": "print(1)"})
         assert result == {"result": "success"}
+        # Verify the POST body was sent correctly
+        request = httpx_mock.get_request()
+        import json
+        assert json.loads(request.content) == {"code": "print(1)"}
 
     @pytest.mark.asyncio
     async def it_returns_error_on_connection_failure(httpx_mock):
@@ -59,8 +62,7 @@ def describe_call_fusion_post():
             httpx.ConnectError("Connection refused"), url="http://127.0.0.1:3001/run_script"
         )
         result = await call_fusion_post("/run_script", {"code": "x"})
-        assert "error" in result
-        assert "not running" in result["error"]
+        assert result == {"error": "Fusion 360 not running or add-in not loaded"}
 
     @pytest.mark.asyncio
     async def it_returns_error_on_http_error(httpx_mock):
@@ -338,7 +340,6 @@ def describe_main():
     @pytest.mark.asyncio
     async def it_can_be_imported():
         # main() runs stdio_server which we can't test directly
-        # but we verify it exists and is async
-        import inspect
-
-        assert inspect.iscoroutinefunction(main)
+        # Verify it exists and is callable
+        # Note: mutmut 3.x wraps async functions in trampolines, so we check callable
+        assert callable(main)

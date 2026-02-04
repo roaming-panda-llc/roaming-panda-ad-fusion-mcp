@@ -25,7 +25,7 @@ jobs:
 
       - name: Run mutation tests
         run: |
-          uv run mutmut run || true
+          uv run mutmut run
           uv run mutmut results
 
   lint:
