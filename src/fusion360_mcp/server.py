@@ -75,9 +75,7 @@ async def list_tools() -> list[Tool]:
             description="Get detailed information about a specific sketch",
             inputSchema={
                 "type": "object",
-                "properties": {
-                    "name": {"type": "string", "description": "Name of the sketch"}
-                },
+                "properties": {"name": {"type": "string", "description": "Name of the sketch"}},
                 "required": ["name"],
             },
         ),
@@ -91,9 +89,7 @@ async def list_tools() -> list[Tool]:
             description="Get detailed information about a specific body",
             inputSchema={
                 "type": "object",
-                "properties": {
-                    "name": {"type": "string", "description": "Name of the body"}
-                },
+                "properties": {"name": {"type": "string", "description": "Name of the body"}},
                 "required": ["name"],
             },
         ),
@@ -121,9 +117,7 @@ async def list_tools() -> list[Tool]:
             ),
             inputSchema={
                 "type": "object",
-                "properties": {
-                    "code": {"type": "string", "description": "Python code to execute"}
-                },
+                "properties": {"code": {"type": "string", "description": "Python code to execute"}},
                 "required": ["code"],
             },
         ),
@@ -228,15 +222,14 @@ async def list_tools() -> list[Tool]:
         Tool(
             name="fusion360_restore_version",
             description=(
-                "Open a specific version of the document in a new tab. "
-                "Save to make it current."
+                "Open a specific version of the document in a new tab. Save to make it current."
             ),
             inputSchema={
                 "type": "object",
                 "properties": {
                     "version_number": {
                         "type": "integer",
-                        "description": "Version number to restore (1-based)"
+                        "description": "Version number to restore (1-based)",
                     }
                 },
                 "required": ["version_number"],

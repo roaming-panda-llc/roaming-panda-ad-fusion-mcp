@@ -22,8 +22,7 @@ def describe_health_command():
 
     def it_reports_status_without_connected(cli_runner, httpx_mock):
         httpx_mock.add_response(
-            url="http://127.0.0.1:3001/health",
-            json={"status": "ok", "fusion": "disconnected"}
+            url="http://127.0.0.1:3001/health", json={"status": "ok", "fusion": "disconnected"}
         )
         result = cli_runner.invoke(main, ["health"])
         assert result.exit_code == 0
@@ -37,9 +36,7 @@ def describe_health_command():
 
     def it_reports_generic_error(cli_runner, httpx_mock):
         httpx_mock.add_response(
-            url="http://127.0.0.1:3001/health",
-            status_code=500,
-            text="Server Error"
+            url="http://127.0.0.1:3001/health", status_code=500, text="Server Error"
         )
         result = cli_runner.invoke(main, ["health"])
         assert result.exit_code == 1
@@ -70,9 +67,7 @@ def describe_serve_command():
                 result = cli_runner.invoke(main, ["serve"])
 
         assert result.exit_code == 0
-        mock_uvicorn.run.assert_called_once_with(
-            mock_app, host="127.0.0.1", port=8765
-        )
+        mock_uvicorn.run.assert_called_once_with(mock_app, host="127.0.0.1", port=8765)
 
     def it_starts_server_with_custom_port_and_host(cli_runner):
         mock_uvicorn = MagicMock()
@@ -82,11 +77,7 @@ def describe_serve_command():
 
         with patch.dict(sys.modules, {"uvicorn": mock_uvicorn}):
             with patch("fusion360_mcp.server.create_app", mock_create_app):
-                result = cli_runner.invoke(
-                    main, ["serve", "--port", "9000", "--host", "0.0.0.0"]
-                )
+                result = cli_runner.invoke(main, ["serve", "--port", "9000", "--host", "0.0.0.0"])
 
         assert result.exit_code == 0
-        mock_uvicorn.run.assert_called_once_with(
-            mock_app, host="0.0.0.0", port=9000
-        )
+        mock_uvicorn.run.assert_called_once_with(mock_app, host="0.0.0.0", port=9000)

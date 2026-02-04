@@ -10,6 +10,7 @@ def describe_main_module():
         # This triggers the import in __main__.py
         from fusion360_mcp import __main__
         from fusion360_mcp.cli import main
+
         assert __main__.main is main
 
     def it_can_be_run_as_module():
@@ -19,7 +20,7 @@ def describe_main_module():
             [sys.executable, "-m", "fusion360_mcp", "--help"],
             capture_output=True,
             text=True,
-            timeout=10
+            timeout=10,
         )
         assert result.returncode == 0
         assert "Fusion 360 MCP Server" in result.stdout
