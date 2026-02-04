@@ -14,7 +14,7 @@ import httpx
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
 from mcp.server.streamable_http_manager import StreamableHTTPSessionManager
-from mcp.types import Tool, TextContent, ImageContent
+from mcp.types import ImageContent, TextContent, Tool
 from starlette.applications import Starlette
 from starlette.routing import Mount
 
@@ -114,7 +114,11 @@ async def list_tools() -> list[Tool]:
         ),
         Tool(
             name="fusion360_run_script",
-            description="Execute Python code directly in Fusion 360 context. The code has access to: adsk (Fusion API module), app (Application), design (active Design), ui (UserInterface). Set 'result' variable to return data.",
+            description=(
+                "Execute Python code directly in Fusion 360 context. "
+                "The code has access to: adsk (Fusion API module), app (Application), "
+                "design (active Design), ui (UserInterface). Set 'result' variable to return data."
+            ),
             inputSchema={
                 "type": "object",
                 "properties": {
@@ -215,12 +219,18 @@ async def list_tools() -> list[Tool]:
         ),
         Tool(
             name="fusion360_list_versions",
-            description="List all saved versions of the current document. Only works for cloud-saved documents.",
+            description=(
+                "List all saved versions of the current document. "
+                "Only works for cloud-saved documents."
+            ),
             inputSchema={"type": "object", "properties": {}, "required": []},
         ),
         Tool(
             name="fusion360_restore_version",
-            description="Open a specific version of the document in a new tab. Save to make it current.",
+            description=(
+                "Open a specific version of the document in a new tab. "
+                "Save to make it current."
+            ),
             inputSchema={
                 "type": "object",
                 "properties": {
@@ -294,7 +304,9 @@ async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent | 
     elif name == "fusion360_create_sketch":
         component_name = arguments.get("component_name", "")
         plane = arguments.get("plane", "")
-        result = await call_fusion_post("/sketch/create", {"component_name": component_name, "plane": plane})
+        result = await call_fusion_post(
+            "/sketch/create", {"component_name": component_name, "plane": plane}
+        )
         return [TextContent(type="text", text=str(result))]
 
     elif name == "fusion360_draw_circle":
@@ -302,10 +314,13 @@ async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent | 
         center_x = arguments.get("center_x", 0)
         center_y = arguments.get("center_y", 0)
         radius = arguments.get("radius", 0)
-        result = await call_fusion_post(
-            "/sketch/circle",
-            {"sketch_name": sketch_name, "center_x": center_x, "center_y": center_y, "radius": radius},
-        )
+        data = {
+            "sketch_name": sketch_name,
+            "center_x": center_x,
+            "center_y": center_y,
+            "radius": radius,
+        }
+        result = await call_fusion_post("/sketch/circle", data)
         return [TextContent(type="text", text=str(result))]
 
     elif name == "fusion360_extrude":
@@ -313,10 +328,13 @@ async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent | 
         profile_index = arguments.get("profile_index", 0)
         distance = arguments.get("distance", 0)
         operation = arguments.get("operation", "new")
-        result = await call_fusion_post(
-            "/extrude",
-            {"sketch_name": sketch_name, "profile_index": profile_index, "distance": distance, "operation": operation},
-        )
+        data = {
+            "sketch_name": sketch_name,
+            "profile_index": profile_index,
+            "distance": distance,
+            "operation": operation,
+        }
+        result = await call_fusion_post("/extrude", data)
         return [TextContent(type="text", text=str(result))]
 
     elif name == "fusion360_draw_rectangle":
@@ -359,6 +377,9 @@ async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent | 
 
 def create_app() -> Starlette:
     """Create Starlette app with Streamable HTTP transport for MCP."""
+    import contextlib
+    from collections.abc import AsyncIterator
+
     session_manager = StreamableHTTPSessionManager(
         app=server,
         event_store=None,
@@ -366,15 +387,20 @@ def create_app() -> Starlette:
         stateless=True,
     )
 
+    @contextlib.asynccontextmanager
+    async def lifespan(app: Starlette) -> AsyncIterator[None]:
+        async with session_manager.run():
+            yield
+
     return Starlette(
         routes=[
             Mount("/mcp", app=session_manager.handle_request),
         ],
-        lifespan=session_manager.lifespan,
+        lifespan=lifespan,
     )
 
 
-async def main():
+async def main():  # pragma: no cover
     """Run the MCP server with stdio transport (for backward compatibility)."""
     async with stdio_server() as (read_stream, write_stream):
         await server.run(read_stream, write_stream, server.create_initialization_options())

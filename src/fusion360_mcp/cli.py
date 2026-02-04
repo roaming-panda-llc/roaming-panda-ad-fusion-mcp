@@ -12,11 +12,12 @@ def main():
 
 
 @main.command()
-@click.option("--port", default=8765, help="Port to listen on")
-@click.option("--host", default="127.0.0.1", help="Host to bind to")
+@click.option("--port", default=8765, show_default=True, help="Port to listen on")
+@click.option("--host", default="127.0.0.1", show_default=True, help="Host to bind to")
 def serve(port: int, host: str):
     """Start the MCP server with Streamable HTTP transport."""
     import uvicorn
+
     from fusion360_mcp.server import create_app
 
     click.echo(f"Starting Fusion 360 MCP server on {host}:{port}")
