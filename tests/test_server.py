@@ -54,6 +54,7 @@ def describe_call_fusion_post():
         # Verify the POST body was sent correctly
         request = httpx_mock.get_request()
         import json
+
         assert json.loads(request.content) == {"code": "print(1)"}
 
     @pytest.mark.asyncio
@@ -384,9 +385,7 @@ def describe_session_manager_configuration():
 
     def it_uses_server_as_app(mocker):
         """Verify session manager is created with the server instance."""
-        mock_manager_class = mocker.patch(
-            "fusion360_mcp.server.StreamableHTTPSessionManager"
-        )
+        mock_manager_class = mocker.patch("fusion360_mcp.server.StreamableHTTPSessionManager")
         mock_manager = mocker.Mock()
         mock_manager.handle_request = mocker.Mock()
         mock_manager.run = mocker.Mock(return_value=mocker.AsyncMock())
@@ -400,9 +399,7 @@ def describe_session_manager_configuration():
 
     def it_uses_none_for_event_store(mocker):
         """Verify event_store is explicitly set to None."""
-        mock_manager_class = mocker.patch(
-            "fusion360_mcp.server.StreamableHTTPSessionManager"
-        )
+        mock_manager_class = mocker.patch("fusion360_mcp.server.StreamableHTTPSessionManager")
         mock_manager = mocker.Mock()
         mock_manager.handle_request = mocker.Mock()
         mock_manager.run = mocker.Mock(return_value=mocker.AsyncMock())
@@ -415,9 +412,7 @@ def describe_session_manager_configuration():
 
     def it_uses_false_for_json_response(mocker):
         """Verify json_response is set to False."""
-        mock_manager_class = mocker.patch(
-            "fusion360_mcp.server.StreamableHTTPSessionManager"
-        )
+        mock_manager_class = mocker.patch("fusion360_mcp.server.StreamableHTTPSessionManager")
         mock_manager = mocker.Mock()
         mock_manager.handle_request = mocker.Mock()
         mock_manager.run = mocker.Mock(return_value=mocker.AsyncMock())
@@ -430,9 +425,7 @@ def describe_session_manager_configuration():
 
     def it_uses_true_for_stateless(mocker):
         """Verify stateless is set to True."""
-        mock_manager_class = mocker.patch(
-            "fusion360_mcp.server.StreamableHTTPSessionManager"
-        )
+        mock_manager_class = mocker.patch("fusion360_mcp.server.StreamableHTTPSessionManager")
         mock_manager = mocker.Mock()
         mock_manager.handle_request = mocker.Mock()
         mock_manager.run = mocker.Mock(return_value=mocker.AsyncMock())
@@ -449,9 +442,7 @@ def describe_starlette_app_configuration():
 
     def it_mounts_mcp_at_correct_path(mocker):
         """Verify MCP route is mounted at /mcp."""
-        mock_manager_class = mocker.patch(
-            "fusion360_mcp.server.StreamableHTTPSessionManager"
-        )
+        mock_manager_class = mocker.patch("fusion360_mcp.server.StreamableHTTPSessionManager")
         mock_manager = mocker.Mock()
         mock_manager.handle_request = mocker.Mock()
         mock_manager.run = mocker.Mock(return_value=mocker.AsyncMock())
@@ -465,9 +456,7 @@ def describe_starlette_app_configuration():
 
     def it_sets_lifespan_handler(mocker):
         """Verify lifespan handler is set (not None)."""
-        mock_manager_class = mocker.patch(
-            "fusion360_mcp.server.StreamableHTTPSessionManager"
-        )
+        mock_manager_class = mocker.patch("fusion360_mcp.server.StreamableHTTPSessionManager")
         mock_manager = mocker.Mock()
         mock_manager.handle_request = mocker.Mock()
         mock_manager.run = mocker.Mock(return_value=mocker.AsyncMock())
@@ -517,6 +506,4 @@ def describe_main():
         mock_stdio.assert_called_once()
 
         # Verify server.run was called with the correct streams
-        mock_run.assert_called_once_with(
-            mock_read_stream, mock_write_stream, mock_init_opts
-        )
+        mock_run.assert_called_once_with(mock_read_stream, mock_write_stream, mock_init_opts)
