@@ -26,6 +26,7 @@ dev = [
     "pytest-cov>=4.1",
     "pytest-asyncio>=0.23",
     "pytest-httpx>=0.30",
+    "pytest-mock>=3.12",
     "mutmut>=3.0",
     "ruff>=0.3.0",
 ]
@@ -55,8 +56,9 @@ exclude_lines = [
 ]
 
 [tool.mutmut]
-paths_to_mutate = "src/fusion360_mcp/"
-tests_dir = "tests/"
+paths_to_mutate = ["src/fusion360_mcp/"]
+tests_dir = ["tests/"]
+debug = true
 
 [tool.ruff]
 line-length = 100

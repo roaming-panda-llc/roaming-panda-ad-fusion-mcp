@@ -393,7 +393,7 @@ def create_app() -> Starlette:
     )
 
 
-async def main():  # pragma: no cover
+async def main():
     """Run the MCP server with stdio transport (for backward compatibility)."""
     async with stdio_server() as (read_stream, write_stream):
         await server.run(read_stream, write_stream, server.create_initialization_options())

@@ -33,8 +33,7 @@ def describe_call_fusion():
             httpx.ConnectError("Connection refused"), url="http://127.0.0.1:3001/health"
         )
         result = await call_fusion("/health")
-        assert "error" in result
-        assert "not running" in result["error"]
+        assert result == {"error": "Fusion 360 not running or add-in not loaded"}
 
     @pytest.mark.asyncio
     async def it_returns_error_on_http_error(httpx_mock):
@@ -52,6 +51,11 @@ def describe_call_fusion_post():
         httpx_mock.add_response(url="http://127.0.0.1:3001/run_script", json={"result": "success"})
         result = await call_fusion_post("/run_script", {"code": "print(1)"})
         assert result == {"result": "success"}
+        # Verify the POST body was sent correctly
+        request = httpx_mock.get_request()
+        import json
+
+        assert json.loads(request.content) == {"code": "print(1)"}
 
     @pytest.mark.asyncio
     async def it_returns_error_on_connection_failure(httpx_mock):
@@ -59,8 +63,7 @@ def describe_call_fusion_post():
             httpx.ConnectError("Connection refused"), url="http://127.0.0.1:3001/run_script"
         )
         result = await call_fusion_post("/run_script", {"code": "x"})
-        assert "error" in result
-        assert "not running" in result["error"]
+        assert result == {"error": "Fusion 360 not running or add-in not loaded"}
 
     @pytest.mark.asyncio
     async def it_returns_error_on_http_error(httpx_mock):
@@ -334,11 +337,173 @@ def describe_call_tool():
         assert "Unknown tool" in result[0].text
 
 
+def describe_timeout_configuration():
+    """Tests to verify timeout values are correct (kills mutants on timeout=300.0)."""
+
+    @pytest.mark.asyncio
+    async def it_uses_300_second_timeout_for_get(mocker):
+        """Verify call_fusion uses exactly 300 second timeout."""
+        # Mock the AsyncClient class to capture the timeout parameter
+        mock_client = mocker.AsyncMock()
+        mock_response = mocker.Mock()
+        mock_response.json.return_value = {"status": "ok"}
+        mock_response.raise_for_status = mocker.Mock()
+        mock_client.get.return_value = mock_response
+
+        mock_async_client = mocker.patch("fusion360_mcp.server.httpx.AsyncClient")
+        mock_async_client.return_value.__aenter__.return_value = mock_client
+        mock_async_client.return_value.__aexit__.return_value = None
+
+        result = await call_fusion("/health")
+
+        # Verify the timeout was exactly 300.0
+        mock_async_client.assert_called_once_with(timeout=300.0)
+        assert result == {"status": "ok"}
+
+    @pytest.mark.asyncio
+    async def it_uses_300_second_timeout_for_post(mocker):
+        """Verify call_fusion_post uses exactly 300 second timeout."""
+        mock_client = mocker.AsyncMock()
+        mock_response = mocker.Mock()
+        mock_response.json.return_value = {"result": "ok"}
+        mock_response.raise_for_status = mocker.Mock()
+        mock_client.post.return_value = mock_response
+
+        mock_async_client = mocker.patch("fusion360_mcp.server.httpx.AsyncClient")
+        mock_async_client.return_value.__aenter__.return_value = mock_client
+        mock_async_client.return_value.__aexit__.return_value = None
+
+        result = await call_fusion_post("/run_script", {"code": "x=1"})
+
+        # Verify the timeout was exactly 300.0
+        mock_async_client.assert_called_once_with(timeout=300.0)
+        assert result == {"result": "ok"}
+
+
+def describe_session_manager_configuration():
+    """Tests to verify StreamableHTTPSessionManager is configured correctly."""
+
+    def it_uses_server_as_app(mocker):
+        """Verify session manager is created with the server instance."""
+        mock_manager_class = mocker.patch("fusion360_mcp.server.StreamableHTTPSessionManager")
+        mock_manager = mocker.Mock()
+        mock_manager.handle_request = mocker.Mock()
+        mock_manager.run = mocker.Mock(return_value=mocker.AsyncMock())
+        mock_manager_class.return_value = mock_manager
+
+        create_app()
+
+        # Verify server is passed as app parameter
+        call_kwargs = mock_manager_class.call_args.kwargs
+        assert call_kwargs["app"] is server
+
+    def it_uses_none_for_event_store(mocker):
+        """Verify event_store is explicitly set to None."""
+        mock_manager_class = mocker.patch("fusion360_mcp.server.StreamableHTTPSessionManager")
+        mock_manager = mocker.Mock()
+        mock_manager.handle_request = mocker.Mock()
+        mock_manager.run = mocker.Mock(return_value=mocker.AsyncMock())
+        mock_manager_class.return_value = mock_manager
+
+        create_app()
+
+        call_kwargs = mock_manager_class.call_args.kwargs
+        assert call_kwargs["event_store"] is None
+
+    def it_uses_false_for_json_response(mocker):
+        """Verify json_response is set to False."""
+        mock_manager_class = mocker.patch("fusion360_mcp.server.StreamableHTTPSessionManager")
+        mock_manager = mocker.Mock()
+        mock_manager.handle_request = mocker.Mock()
+        mock_manager.run = mocker.Mock(return_value=mocker.AsyncMock())
+        mock_manager_class.return_value = mock_manager
+
+        create_app()
+
+        call_kwargs = mock_manager_class.call_args.kwargs
+        assert call_kwargs["json_response"] is False
+
+    def it_uses_true_for_stateless(mocker):
+        """Verify stateless is set to True."""
+        mock_manager_class = mocker.patch("fusion360_mcp.server.StreamableHTTPSessionManager")
+        mock_manager = mocker.Mock()
+        mock_manager.handle_request = mocker.Mock()
+        mock_manager.run = mocker.Mock(return_value=mocker.AsyncMock())
+        mock_manager_class.return_value = mock_manager
+
+        create_app()
+
+        call_kwargs = mock_manager_class.call_args.kwargs
+        assert call_kwargs["stateless"] is True
+
+
+def describe_starlette_app_configuration():
+    """Tests to verify Starlette app is configured correctly."""
+
+    def it_mounts_mcp_at_correct_path(mocker):
+        """Verify MCP route is mounted at /mcp."""
+        mock_manager_class = mocker.patch("fusion360_mcp.server.StreamableHTTPSessionManager")
+        mock_manager = mocker.Mock()
+        mock_manager.handle_request = mocker.Mock()
+        mock_manager.run = mocker.Mock(return_value=mocker.AsyncMock())
+        mock_manager_class.return_value = mock_manager
+
+        app = create_app()
+
+        # Verify /mcp route exists
+        route_paths = [str(r.path) for r in app.routes]
+        assert "/mcp" in route_paths
+
+    def it_sets_lifespan_handler(mocker):
+        """Verify lifespan handler is set (not None)."""
+        mock_manager_class = mocker.patch("fusion360_mcp.server.StreamableHTTPSessionManager")
+        mock_manager = mocker.Mock()
+        mock_manager.handle_request = mocker.Mock()
+        mock_manager.run = mocker.Mock(return_value=mocker.AsyncMock())
+        mock_manager_class.return_value = mock_manager
+
+        # Mock Starlette to capture the lifespan parameter
+        mock_starlette = mocker.patch("fusion360_mcp.server.Starlette")
+
+        create_app()
+
+        # Verify lifespan parameter was passed (not None)
+        call_kwargs = mock_starlette.call_args.kwargs
+        assert "lifespan" in call_kwargs
+        assert call_kwargs["lifespan"] is not None
+
+
 def describe_main():
     @pytest.mark.asyncio
     async def it_can_be_imported():
         # main() runs stdio_server which we can't test directly
-        # but we verify it exists and is async
-        import inspect
+        # Verify it exists and is callable
+        # Note: mutmut 3.x wraps async functions in trampolines, so we check callable
+        assert callable(main)
 
-        assert inspect.iscoroutinefunction(main)
+    @pytest.mark.asyncio
+    async def it_runs_server_with_stdio_streams(mocker):
+        """Verify main() correctly wires stdio_server streams to server.run()."""
+        # Mock the streams returned by stdio_server
+        mock_read_stream = mocker.Mock(name="read_stream")
+        mock_write_stream = mocker.Mock(name="write_stream")
+
+        # Mock stdio_server as async context manager
+        mock_stdio = mocker.patch("fusion360_mcp.server.stdio_server")
+        mock_stdio.return_value.__aenter__ = mocker.AsyncMock(
+            return_value=(mock_read_stream, mock_write_stream)
+        )
+        mock_stdio.return_value.__aexit__ = mocker.AsyncMock(return_value=None)
+
+        # Mock server.run and create_initialization_options
+        mock_run = mocker.patch.object(server, "run", new_callable=mocker.AsyncMock)
+        mock_init_opts = mocker.Mock(name="init_options")
+        mocker.patch.object(server, "create_initialization_options", return_value=mock_init_opts)
+
+        await main()
+
+        # Verify stdio_server was called
+        mock_stdio.assert_called_once()
+
+        # Verify server.run was called with the correct streams
+        mock_run.assert_called_once_with(mock_read_stream, mock_write_stream, mock_init_opts)
