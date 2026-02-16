@@ -5,6 +5,7 @@ import adsk.fusion
 import base64
 import os
 import tempfile
+from datetime import datetime
 
 
 def get_app():
@@ -347,6 +348,13 @@ def activate_component(name: str):
     if not design:
         return {"error": "Active document is not a design"}
 
+    # Check if design is in Direct Design mode
+    if design.designType == adsk.fusion.DesignTypes.DirectDesignType:
+        return {
+            "error": "Cannot activate components in Direct Design mode. "
+            "Switch to Parametric Design mode first (Design > Design Type > Parametric)."
+        }
+
     try:
         # Find the component
         component = None
@@ -588,11 +596,22 @@ def list_versions():
     versions = []
     for i in range(versions_collection.count):
         version = versions_collection.item(i)
+
+        # Convert dateCreated to ISO format
+        # dateCreated can be either a Unix timestamp (int/float) or datetime object
+        date_created_str = None
+        if version.dateCreated:
+            if isinstance(version.dateCreated, (int, float)):
+                date_created_str = datetime.fromtimestamp(version.dateCreated).isoformat()
+            else:
+                # Already a datetime-like object
+                date_created_str = version.dateCreated.isoformat() if hasattr(version.dateCreated, 'isoformat') else str(version.dateCreated)
+
         versions.append({
             "version_number": version.versionNumber,
             "version_id": version.id,
             "name": version.name,
-            "date_created": version.dateCreated.isoformat() if version.dateCreated else None,
+            "date_created": date_created_str,
             "description": version.description if hasattr(version, 'description') else None
         })
 

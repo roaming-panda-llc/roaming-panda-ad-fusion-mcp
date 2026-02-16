@@ -308,6 +308,17 @@ def describe_call_tool():
         assert "success" in result[0].text
 
     @pytest.mark.asyncio
+    async def it_handles_activate_component_direct_design_error(httpx_mock):
+        httpx_mock.add_response(
+            url="http://127.0.0.1:3001/component/activate",
+            json={"error": "Cannot activate components in Direct Design mode. Switch to Parametric Design mode first (Design > Design Type > Parametric)."}
+        )
+        result = await call_tool("fusion360_activate_component", {"name": "Component1"})
+        assert len(result) == 1
+        assert "Direct Design mode" in result[0].text
+        assert "Parametric" in result[0].text
+
+    @pytest.mark.asyncio
     async def it_handles_set_visibility_tool(httpx_mock):
         httpx_mock.add_response(url="http://127.0.0.1:3001/visibility", json={"success": True})
         result = await call_tool(
