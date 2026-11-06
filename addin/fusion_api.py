@@ -226,13 +226,15 @@ def get_parameters():
 
     params = []
     for param in design.userParameters:
-        params.append({
-            "name": param.name,
-            "expression": param.expression,
-            "value": param.value,
-            "unit": param.unit,
-            "comment": param.comment,
-        })
+        params.append(
+            {
+                "name": param.name,
+                "expression": param.expression,
+                "value": param.value,
+                "unit": param.unit,
+                "comment": param.comment,
+            }
+        )
 
     return {"user_parameters": params, "count": len(params)}
 
@@ -267,7 +269,7 @@ def run_script(code: str):
         "app": app,
         "design": design,
         "ui": app.userInterface,
-        "result": None
+        "result": None,
     }
 
     try:
@@ -275,6 +277,7 @@ def run_script(code: str):
         return {"success": True, "result": namespace.get("result")}
     except Exception as e:
         import traceback
+
         return {"error": str(e), "traceback": traceback.format_exc()}
 
 
@@ -327,6 +330,7 @@ def create_sketch(component_name: str = None, plane: str = "XY"):
 
     except Exception as e:
         import traceback
+
         return {"error": str(e), "traceback": traceback.format_exc()}
 
 
@@ -365,6 +369,7 @@ def activate_component(name: str):
 
     except Exception as e:
         import traceback
+
         return {"error": str(e), "traceback": traceback.format_exc()}
 
 
@@ -410,6 +415,7 @@ def draw_circle(sketch_name: str, center_x: float, center_y: float, radius: floa
 
     except Exception as e:
         import traceback
+
         return {"error": str(e), "traceback": traceback.format_exc()}
 
 
@@ -457,6 +463,7 @@ def draw_rectangle(sketch_name: str, x1: float, y1: float, x2: float, y2: float)
 
     except Exception as e:
         import traceback
+
         return {"error": str(e), "traceback": traceback.format_exc()}
 
 
@@ -498,7 +505,9 @@ def extrude(sketch_name: str, profile_index: int, distance: float, operation: st
 
         # Get the profile
         if profile_index < 0 or profile_index >= sketch.profiles.count:
-            return {"error": f"Profile index {profile_index} out of range (0-{sketch.profiles.count - 1})"}
+            return {
+                "error": f"Profile index {profile_index} out of range (0-{sketch.profiles.count - 1})"
+            }
 
         profile = sketch.profiles.item(profile_index)
 
@@ -506,7 +515,7 @@ def extrude(sketch_name: str, profile_index: int, distance: float, operation: st
         operation_map = {
             "new": adsk.fusion.FeatureOperations.NewBodyFeatureOperation,
             "join": adsk.fusion.FeatureOperations.JoinFeatureOperation,
-            "cut": adsk.fusion.FeatureOperations.CutFeatureOperation
+            "cut": adsk.fusion.FeatureOperations.CutFeatureOperation,
         }
 
         if operation not in operation_map:
@@ -523,6 +532,7 @@ def extrude(sketch_name: str, profile_index: int, distance: float, operation: st
 
     except Exception as e:
         import traceback
+
         return {"error": str(e), "traceback": traceback.format_exc()}
 
 
@@ -562,6 +572,7 @@ def set_visibility(component_name: str, visible: bool):
 
     except Exception as e:
         import traceback
+
         return {"error": str(e), "traceback": traceback.format_exc()}
 
 
@@ -588,19 +599,21 @@ def list_versions():
     versions = []
     for i in range(versions_collection.count):
         version = versions_collection.item(i)
-        versions.append({
-            "version_number": version.versionNumber,
-            "version_id": version.id,
-            "name": version.name,
-            "date_created": version.dateCreated.isoformat() if version.dateCreated else None,
-            "description": version.description if hasattr(version, 'description') else None
-        })
+        versions.append(
+            {
+                "version_number": version.versionNumber,
+                "version_id": version.id,
+                "name": version.name,
+                "date_created": version.dateCreated.isoformat() if version.dateCreated else None,
+                "description": version.description if hasattr(version, "description") else None,
+            }
+        )
 
     return {
         "document_name": doc.name,
         "current_version": data_file.versionNumber,
         "total_versions": versions_collection.count,
-        "versions": versions
+        "versions": versions,
     }
 
 
@@ -645,10 +658,11 @@ def restore_version(version_number: int):
                 "success": True,
                 "opened_document": opened_doc.name,
                 "version_number": version_number,
-                "note": "Version opened in new tab. Save to make it the current version."
+                "note": "Version opened in new tab. Save to make it the current version.",
             }
         else:
             return {"error": "Failed to open version"}
     except Exception as e:
         import traceback
+
         return {"error": str(e), "traceback": traceback.format_exc()}

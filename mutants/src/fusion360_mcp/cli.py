@@ -1,0 +1,77 @@
+"""CLI interface for Fusion 360 MCP server."""
+
+import click
+import httpx
+from inspect import signature as _mutmut_signature
+from typing import Annotated
+from typing import Callable
+from typing import ClassVar
+
+
+MutantDict = Annotated[dict[str, Callable], "Mutant"]
+
+
+def _mutmut_trampoline(orig, mutants, call_args, call_kwargs, self_arg=None):
+    """Forward call to original or mutated function, depending on the environment"""
+    import os
+
+    mutant_under_test = os.environ["MUTANT_UNDER_TEST"]
+    if mutant_under_test == "fail":
+        from mutmut.__main__ import MutmutProgrammaticFailException
+
+        raise MutmutProgrammaticFailException("Failed programmatically")
+    elif mutant_under_test == "stats":
+        from mutmut.__main__ import record_trampoline_hit
+
+        record_trampoline_hit(orig.__module__ + "." + orig.__name__)
+        result = orig(*call_args, **call_kwargs)
+        return result
+    prefix = orig.__module__ + "." + orig.__name__ + "__mutmut_"
+    if not mutant_under_test.startswith(prefix):
+        result = orig(*call_args, **call_kwargs)
+        return result
+    mutant_name = mutant_under_test.rpartition(".")[-1]
+    if self_arg is not None:
+        # call to a class method where self is not bound
+        result = mutants[mutant_name](self_arg, *call_args, **call_kwargs)
+    else:
+        result = mutants[mutant_name](*call_args, **call_kwargs)
+    return result
+
+
+@click.group()
+@click.version_option(package_name="roaming-panda-ad-fusion-mcp")
+def main():
+    """Fusion 360 MCP Server - Control Fusion 360 via Model Context Protocol."""
+    pass
+
+
+@main.command()
+@click.option("--port", default=8765, show_default=True, help="Port to listen on")
+@click.option("--host", default="127.0.0.1", show_default=True, help="Host to bind to")
+def serve(port: int, host: str):
+    """Start the MCP server with Streamable HTTP transport."""
+    import uvicorn
+
+    from fusion360_mcp.server import create_app
+
+    click.echo(f"Starting Fusion 360 MCP server on {host}:{port}")
+    app = create_app()
+    uvicorn.run(app, host=host, port=port)
+
+
+@main.command()
+def health():
+    """Check if Fusion 360 add-in is running."""
+    try:
+        response = httpx.get("http://127.0.0.1:3001/health", timeout=5.0)
+        data = response.json()
+        click.echo(f"Fusion 360: {data.get('status', 'unknown')}")
+        if data.get("fusion") == "connected":
+            click.echo("Add-in is connected and ready")
+    except httpx.ConnectError:
+        click.echo("Fusion 360 add-in not running", err=True)
+        raise SystemExit(1)
+    except Exception as e:
+        click.echo(f"Error: {e}", err=True)
+        raise SystemExit(1)

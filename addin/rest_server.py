@@ -184,6 +184,7 @@ class FusionRESTHandler(BaseHTTPRequestHandler):
                 elif "data_base64" in result:
                     # Decode base64 and send raw PNG
                     import base64
+
                     image_bytes = base64.b64decode(result["data_base64"])
                     self.send_image(image_bytes)
                 else:
@@ -203,57 +204,67 @@ class FusionRESTHandler(BaseHTTPRequestHandler):
     def do_POST(self):
         """Handle POST requests for write operations."""
         try:
-            content_length = int(self.headers.get('Content-Length', 0))
-            post_data = json.loads(self.rfile.read(content_length).decode('utf-8')) if content_length > 0 else {}
+            content_length = int(self.headers.get("Content-Length", 0))
+            post_data = (
+                json.loads(self.rfile.read(content_length).decode("utf-8"))
+                if content_length > 0
+                else {}
+            )
         except (ValueError, json.JSONDecodeError) as e:
             self.send_json({"error": f"Invalid JSON: {str(e)}"}, 400)
             return
 
-        path = self.path.split('?')[0]  # Remove query params
+        path = self.path.split("?")[0]  # Remove query params
 
         try:
             if path == "/run_script":
                 result = execute_on_main_thread("run_script", post_data.get("code", ""))
 
             elif path == "/sketch/create":
-                result = execute_on_main_thread("create_sketch",
-                    post_data.get("component_name"),
-                    post_data.get("plane"))
+                result = execute_on_main_thread(
+                    "create_sketch", post_data.get("component_name"), post_data.get("plane")
+                )
 
             elif path == "/sketch/circle":
-                result = execute_on_main_thread("draw_circle",
+                result = execute_on_main_thread(
+                    "draw_circle",
                     post_data.get("sketch_name"),
                     post_data.get("center_x", 0),
                     post_data.get("center_y", 0),
-                    post_data.get("radius", 1))
+                    post_data.get("radius", 1),
+                )
 
             elif path == "/extrude":
-                result = execute_on_main_thread("extrude",
+                result = execute_on_main_thread(
+                    "extrude",
                     post_data.get("sketch_name"),
                     post_data.get("profile_index", 0),
                     post_data.get("distance", 1),
-                    post_data.get("operation", "new"))
+                    post_data.get("operation", "new"),
+                )
 
             elif path == "/sketch/rectangle":
-                result = execute_on_main_thread("draw_rectangle",
+                result = execute_on_main_thread(
+                    "draw_rectangle",
                     post_data.get("sketch_name"),
                     post_data.get("x1", 0),
                     post_data.get("y1", 0),
                     post_data.get("x2", 1),
-                    post_data.get("y2", 1))
+                    post_data.get("y2", 1),
+                )
 
             elif path == "/component/activate":
-                result = execute_on_main_thread("activate_component",
-                    post_data.get("name"))
+                result = execute_on_main_thread("activate_component", post_data.get("name"))
 
             elif path == "/visibility":
-                result = execute_on_main_thread("set_visibility",
+                result = execute_on_main_thread(
+                    "set_visibility",
                     post_data.get("component_name"),
-                    post_data.get("visible", True))
+                    post_data.get("visible", True),
+                )
 
             elif path == "/version/restore":
-                result = execute_on_main_thread("restore_version",
-                    post_data.get("version_number"))
+                result = execute_on_main_thread("restore_version", post_data.get("version_number"))
 
             else:
                 self.send_json({"error": f"Unknown POST endpoint: {path}"}, 404)
@@ -287,9 +298,7 @@ class RESTServer:
 
         try:
             self.server = HTTPServer(("127.0.0.1", self.port), FusionRESTHandler)
-            self.thread = threading.Thread(
-                target=self.server.serve_forever, daemon=True
-            )
+            self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
             self.thread.start()
             return True
         except Exception:
